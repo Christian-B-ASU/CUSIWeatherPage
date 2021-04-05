@@ -1,0 +1,71 @@
+﻿@page "/weather"
+
+@inject IHttpClientFactory _clientFactory
+
+<h3>Weather Information</h3>
+Note: All temperatures are recorded in degrees Fahrenheit
+@if (string.IsNullOrWhiteSpace(errorString) == false)
+{
+    <div class="h2">@errorString</div>
+}
+else if (weatherForecast is null)
+{
+    <div class="h4">Loading...</div>
+}
+else
+{
+    <table class="table table-striped">
+        <thead class="thead-dark">
+            <tr>
+                <th>Location</th>
+                <th>Temperature</th>
+                <th>Min Temp</th>
+                <th>High Temp</th>
+                <th>Humidity</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>@weatherForecast.name, @weatherForecast.sys.country</td>
+                <td>@weatherForecast.Main.temp</td>
+                <td>@weatherForecast.Main.temp_min</td>
+                <td>@weatherForecast.Main.temp_max</td>
+                <td>@weatherForecast.Main.humidity%</td>
+            </tr>
+        </tbody>
+    </table>
+
+}
+
+@code {
+
+    CurrentWeatherModel weatherForecast;
+    string errorString;
+
+    public string city = "Jonesboro";
+    public string country = "US";
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get,
+            $"http://api.openweathermap.org/data/2.5/weather?q={city},{country}&units=imperial&APPID=a982baa44385617c741cb8db3ae635b7");
+
+        //Request format
+        //api.openweathermap.org/data/2.5/weather?q= + CITY + COUNTRY + & + UNITS + =imperial&APPID=a982baa44385617c741cb8db3ae635b7
+
+        var client = _clientFactory.CreateClient();
+
+        HttpResponseMessage response = await client.SendAsync(request);
+
+        if (response.IsSuccessStatusCode)
+        {
+            weatherForecast = await response.Content.ReadFromJsonAsync<CurrentWeatherModel>();
+            errorString = null;
+        }
+        else
+        {
+            errorString = $"Error encountered retrieving forecast: {response.ReasonPhrase} ";
+        }
+    }
+}
